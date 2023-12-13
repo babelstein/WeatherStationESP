@@ -32,7 +32,7 @@ struct weatherStationReport
   float humidity;
 };
 
-const int numberOfReads = 10;
+const int numberOfReads = 20;
 float sensorsData[numberOfReads][5];
 
 void setupPmsSensor()
@@ -117,7 +117,7 @@ weatherStationReport calculateSensorsData()
   report.humidity = calcHumi;
 
   memset(sensorsData, 0, sizeof sensorsData);
-
+  Serial.println("Zeros: " + String(numberOfZeros));
   return report;
 }
 
@@ -140,7 +140,7 @@ void printReport(weatherStationReport report)
 void loop()
 {
   pms.wakeUp();
-  delay(30 * SECOND);
+  delay(5 * SECOND);
   pms.requestRead();
 
   readSensors();
@@ -149,5 +149,5 @@ void loop()
   Serial.println();
 
   pms.sleep();
-  delay(1 * SECOND);
+  delay(30 * SECOND);
 }
