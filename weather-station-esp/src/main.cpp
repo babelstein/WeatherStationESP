@@ -1,16 +1,15 @@
 #include "PMS.h"
 #include <SoftwareSerial.h>
 #include <Adafruit_Sensor.h>
-#include <Adafruit_I2CDevice.h>
 #include <SPI.h>
 #include <DHT.h>
 
 #define SECOND 1000
 #define DHTTYPE DHT22
 
-const byte DHTPIN = 5;
-const byte RXPIN = 21;
-const byte TXPIN = 22;
+const byte DHTPIN = D1;
+const byte RXPIN = D5;
+const byte TXPIN = D6;
 
 const int pm1_0Index = 0;
 const int pm2_5Index = 1;
@@ -18,13 +17,23 @@ const int pm10_0Index = 2;
 const int tempIndex = 3;
 const int humidityIndex = 4;
 
-SoftwareSerial mySerial(RXPIN, TXPIN);
+SoftwareSerial mySerial(TXPIN, RXPIN);
 DHT dht(DHTPIN, DHTTYPE);
 
 PMS pms(mySerial);
 PMS::DATA data;
 
-float sensorsData[10][5];
+struct weatherStationReport
+{
+  float pm1_0;
+  float pm2_5;
+  float pm10_0;
+  float temperature;
+  float humidity;
+};
+
+const int numberOfReads = 10;
+float sensorsData[numberOfReads][5];
 
 void setupPmsSensor()
 {
@@ -47,14 +56,14 @@ void setup()
 
 void readSensors()
 {
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < numberOfReads; i++)
   {
-    // if (pms.readUntil(data))
-    // {
-    //   sensorsData[i][pm1_0Index] = data.PM_AE_UG_1_0;
-    //   sensorsData[i][pm2_5Index] = data.PM_AE_UG_2_5;
-    //   sensorsData[i][pm10_0Index] = data.PM_AE_UG_10_0;
-    // }
+    if (pms.readUntil(data))
+    {
+      sensorsData[i][pm1_0Index] = data.PM_AE_UG_1_0;
+      sensorsData[i][pm2_5Index] = data.PM_AE_UG_2_5;
+      sensorsData[i][pm10_0Index] = data.PM_AE_UG_10_0;
+    }
     float test = dht.readTemperature();
     if (!isnan(test))
     {
@@ -68,7 +77,7 @@ void readSensors()
   }
 }
 
-void printSensorsData()
+weatherStationReport calculateSensorsData()
 {
   float calcPm1_0 = 0;
   float calcPm2_5 = 0;
@@ -76,46 +85,69 @@ void printSensorsData()
   float calcTemp = 0;
   float calcHumi = 0;
 
-  for (int i = 0; i < 10; i++)
+  int numberOfZeros = 0;
+
+  for (int i = 0; i < numberOfReads; i++)
   {
     calcPm1_0 += sensorsData[i][pm1_0Index];
     calcPm2_5 += sensorsData[i][pm2_5Index];
     calcPm10_0 += sensorsData[i][pm10_0Index];
     calcTemp += sensorsData[i][tempIndex];
     calcHumi += sensorsData[i][humidityIndex];
+    if (sensorsData[i][pm1_0Index] == 0 || sensorsData[i][pm2_5Index] == 0)
+      numberOfZeros++;
   }
-  calcPm1_0 = calcPm1_0 / 10.0;
-  calcPm2_5 = calcPm2_5 / 10.0;
-  calcPm10_0 = calcPm10_0 / 10.0;
-  calcTemp = calcTemp / 10.0;
-  calcHumi = calcHumi / 10.0;
+  calcPm1_0 = calcPm1_0 / (float)numberOfReads - numberOfZeros;
+  calcPm2_5 = calcPm2_5 / (float)numberOfReads - numberOfZeros;
+  calcPm10_0 = calcPm10_0 / (float)numberOfReads - numberOfZeros;
+  calcTemp = calcTemp / (float)numberOfReads;
+  calcHumi = calcHumi / (float)numberOfReads;
 
-  Serial.print("PM 1.0 (ug/m3): ");
-  Serial.println(calcPm1_0);
-  Serial.print("PM 2.5 (ug/m3): ");
-  Serial.println(calcPm2_5);
-
-  Serial.print("PM 10.0 (ug/m3): ");
-  Serial.println(calcPm10_0);
-  Serial.print("Temperature: ");
-  Serial.print(calcTemp);
-  Serial.println("°C");
-  Serial.print("Humidity: ");
-  Serial.print(calcHumi);
-  Serial.println("%");
+  if (numberOfReads == numberOfZeros)
+  {
+    calcPm1_0 = 0;
+    calcPm2_5 = 0;
+    calcPm10_0 = 0;
+  }
+  struct weatherStationReport report;
+  report.pm1_0 = calcPm1_0;
+  report.pm2_5 = calcPm2_5;
+  report.pm10_0 = calcPm10_0;
+  report.temperature = calcTemp;
+  report.humidity = calcHumi;
 
   memset(sensorsData, 0, sizeof sensorsData);
+
+  return report;
+}
+
+void printReport(weatherStationReport report)
+{
+  Serial.print("PM 1.0 (ug/m3): ");
+  Serial.println(report.pm1_0);
+  Serial.print("PM 2.5 (ug/m3): ");
+  Serial.println(report.pm2_5);
+  Serial.print("PM 10.0 (ug/m3): ");
+  Serial.println(report.pm10_0);
+  Serial.print("Temperature: ");
+  Serial.print(report.temperature);
+  Serial.println("°C");
+  Serial.print("Humidity: ");
+  Serial.print(report.humidity);
+  Serial.println("%");
 }
 
 void loop()
 {
   pms.wakeUp();
+  delay(30 * SECOND);
   pms.requestRead();
 
   readSensors();
-  printSensorsData();
+  struct weatherStationReport report = calculateSensorsData();
+  printReport(report);
   Serial.println();
 
   pms.sleep();
-  delay(12 * SECOND);
+  delay(1 * SECOND);
 }
