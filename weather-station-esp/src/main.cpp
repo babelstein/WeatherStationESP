@@ -3,9 +3,21 @@
 #include <Adafruit_Sensor.h>
 #include <SPI.h>
 #include <DHT.h>
+#include <ESP8266WiFi.h>
+#include <secrets.h>
+#include <ArduinoJson.h>
+#include <PubSubClient.h>
 
 #define SECOND 1000
 #define DHTTYPE DHT22
+#define MSG_BUFFER_SIZE (80)
+
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASS;
+const char *mqttbroker = MQTT_ADDRESS;
+const int mqttport = MQTT_PORT;
+const char *mqttuser = MQTT_USER;
+const char *mqttpswd = MQTT_PSWD;
 
 const byte DHTPIN = D1;
 const byte RXPIN = D5;
@@ -23,8 +35,15 @@ DHT dht(DHTPIN, DHTTYPE);
 PMS pms(mySerial);
 PMS::DATA data;
 
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+unsigned long lastMsg = 0;
+
+// char msg[MSG_BUFFER_SIZE];
+
 struct weatherStationReport
 {
+  String sensorId;
   float pm1_0;
   float pm2_5;
   float pm10_0;
@@ -47,11 +66,44 @@ void setupDhtSensor()
   dht.begin();
 }
 
+void setupWiFiConnection()
+{
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  // handle message arrived
+}
+
+void setupMqttConnection()
+{
+  mqttClient.setServer(mqttbroker, mqttport);
+  mqttClient.setCallback(callback);
+}
+
 void setup()
 {
   Serial.begin(115200); // output
+  delay(1000);
   setupPmsSensor();
   setupDhtSensor();
+  setupWiFiConnection();
+  setupMqttConnection();
 }
 
 void readSensors()
@@ -137,6 +189,49 @@ void printReport(weatherStationReport report)
   Serial.println("%");
 }
 
+void reconnect()
+{
+  // Loop until we're reconnected
+  while (!mqttClient.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+    if (mqttClient.connect("arduinoClient", mqttuser, mqttpswd))
+    {
+      Serial.println("connected");
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
+
+void sendReport(weatherStationReport report)
+{
+  if (!mqttClient.connected())
+  {
+    reconnect();
+  }
+
+  String msg = "{\"pm1_0\":" + String(report.pm1_0) + "," +
+               "\"pm2_5\":" + String(report.pm2_5) + "," +
+               "\"pm10_0\":" + String(report.pm10_0) + "," +
+               "\"temperature\":" + String(report.temperature) + "," +
+               "\"humidity\":" + String(report.humidity) + "}";
+
+  char payload[msg.length() + 1];
+  memset(payload, 0, sizeof payload);
+
+  for (int i = 0; i < msg.length(); i++)
+  {
+    payload[i] = msg[i];
+  }
+  mqttClient.publish("home/temp-dust-sensor", payload);
+}
+
 void loop()
 {
   pms.wakeUp();
@@ -146,6 +241,7 @@ void loop()
   readSensors();
   struct weatherStationReport report = calculateSensorsData();
   printReport(report);
+  sendReport(report);
   Serial.println();
 
   pms.sleep();
