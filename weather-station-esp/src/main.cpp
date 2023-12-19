@@ -141,28 +141,27 @@ weatherStationReport calculateSensorsData()
 
   for (int i = 0; i < numberOfReads; i++)
   {
-    if (sensorsData[i][pm1_0Index] <= 0 || sensorsData[i][pm2_5Index] <= 0 || sensorsData[i][pm10_0Index] <= 0){
+    if (sensorsData[i][pm1_0Index] <= 0 
+      && sensorsData[i][pm2_5Index] <= 0 
+      && sensorsData[i][pm10_0Index] <= 0
+    ){
       numberOfZeros++;
       continue;
     }
+      
     calcPm1_0 += sensorsData[i][pm1_0Index];
     calcPm2_5 += sensorsData[i][pm2_5Index];
     calcPm10_0 += sensorsData[i][pm10_0Index];
     calcTemp += sensorsData[i][tempIndex];
     calcHumi += sensorsData[i][humidityIndex];
   }
-  calcPm1_0 = calcPm1_0 / (float)numberOfReads - numberOfZeros;
-  calcPm2_5 = calcPm2_5 / (float)numberOfReads - numberOfZeros;
-  calcPm10_0 = calcPm10_0 / (float)numberOfReads - numberOfZeros;
-  calcTemp = calcTemp / (float)numberOfReads;
-  calcHumi = calcHumi / (float)numberOfReads;
 
-  if (numberOfReads == numberOfZeros || calcPm1_0 < 0 || calcPm2_5 < 0 || calcPm10_0 < 0)
-  {
-    calcPm1_0 = 0;
-    calcPm2_5 = 0;
-    calcPm10_0 = 0;
-  }
+  calcPm1_0 = calcPm1_0 / (float)(numberOfReads - numberOfZeros);
+  calcPm2_5 = calcPm2_5 / (float)(numberOfReads - numberOfZeros);
+  calcPm10_0 = calcPm10_0 / (float)(numberOfReads - numberOfZeros);
+  calcTemp = calcTemp / (float)(numberOfReads - numberOfZeros);
+  calcHumi = calcHumi / (float)(numberOfReads - numberOfZeros);
+  
   struct weatherStationReport report;
   report.pm1_0 = calcPm1_0;
   report.pm2_5 = calcPm2_5;
@@ -193,7 +192,6 @@ void printReport(weatherStationReport report)
 
 void reconnect()
 {
-  // Loop until we're reconnected
   while (!mqttClient.connected())
   {
     Serial.print("Attempting MQTT connection...");
@@ -227,7 +225,7 @@ void sendReport(weatherStationReport report)
   char payload[msg.length() + 1];
   memset(payload, 0, sizeof payload);
 
-  for (int i = 0; i < msg.length(); i++)
+  for (u_int i = 0; i < msg.length(); i++)
   {
     payload[i] = msg[i];
   }
@@ -237,7 +235,7 @@ void sendReport(weatherStationReport report)
 void loop()
 {
   pms.wakeUp();
-  delay(5 * SECOND);
+  delay(10 * SECOND);
   pms.requestRead();
 
   readSensors();
@@ -247,5 +245,5 @@ void loop()
   Serial.println();
 
   pms.sleep();
-  delay(30 * SECOND);
+  delay(29 * SECOND);
 }
