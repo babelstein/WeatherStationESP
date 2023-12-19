@@ -141,13 +141,15 @@ weatherStationReport calculateSensorsData()
 
   for (int i = 0; i < numberOfReads; i++)
   {
+    if (sensorsData[i][pm1_0Index] <= 0 || sensorsData[i][pm2_5Index] <= 0 || sensorsData[i][pm10_0Index] <= 0){
+      numberOfZeros++;
+      continue;
+    }
     calcPm1_0 += sensorsData[i][pm1_0Index];
     calcPm2_5 += sensorsData[i][pm2_5Index];
     calcPm10_0 += sensorsData[i][pm10_0Index];
     calcTemp += sensorsData[i][tempIndex];
     calcHumi += sensorsData[i][humidityIndex];
-    if (sensorsData[i][pm1_0Index] == 0 || sensorsData[i][pm2_5Index] == 0)
-      numberOfZeros++;
   }
   calcPm1_0 = calcPm1_0 / (float)numberOfReads - numberOfZeros;
   calcPm2_5 = calcPm2_5 / (float)numberOfReads - numberOfZeros;
