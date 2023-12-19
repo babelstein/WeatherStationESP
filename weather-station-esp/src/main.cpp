@@ -21,12 +21,12 @@ const u_int numberOfReads = 20;
 const char *topicName = "home/temp-dust-sensor";
 
 /* SECRETS */
-const char *ssid = WIFI_SSID;
-const char *password = WIFI_PASS;
-const char *mqttbroker = MQTT_ADDRESS;
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASS;
+const char* mqttbroker = MQTT_ADDRESS;
 const u_int mqttport = MQTT_PORT;
-const char *mqttuser = MQTT_USER;
-const char *mqttpswd = MQTT_PSWD;
+const char* mqttuser = MQTT_USER;
+const char* mqttpswd = MQTT_PSWD;
 
 const u_int pm1_0Index = 0;
 const u_int pm2_5Index = 1;
@@ -75,7 +75,7 @@ void setupWiFiConnection()
   Serial.println(WiFi.localIP());
 }
 
-void callback(char *topic, byte *payload, unsigned int length)
+void callback(char* topic, byte* payload, unsigned int length)
 {
   // handle message arrived
 }
@@ -140,13 +140,26 @@ weatherStationReport calculateSensorsData()
     calcPm1_0 += sensorsData[i][pm1_0Index];
     calcPm2_5 += sensorsData[i][pm2_5Index];
     calcPm10_0 += sensorsData[i][pm10_0Index];
-    calcTemp += sensorsData[i][tempIndex];
-    calcHumi += sensorsData[i][humidityIndex];
   }
 
   calcPm1_0 = calcPm1_0 / (float)(numberOfReads - numberOfZeros);
   calcPm2_5 = calcPm2_5 / (float)(numberOfReads - numberOfZeros);
   calcPm10_0 = calcPm10_0 / (float)(numberOfReads - numberOfZeros);
+
+  numberOfZeros = 0;
+
+  for (u_int i = 0; i < numberOfReads; i++)
+  {
+    if (sensorsData[i][tempIndex] == 0 && sensorsData[i][humidityIndex] == 0)
+    {
+      numberOfZeros++;
+      continue;
+    }
+
+    calcTemp += sensorsData[i][tempIndex];
+    calcHumi += sensorsData[i][humidityIndex];
+  }
+
   calcTemp = calcTemp / (float)(numberOfReads - numberOfZeros);
   calcHumi = calcHumi / (float)(numberOfReads - numberOfZeros);
 
@@ -158,7 +171,6 @@ weatherStationReport calculateSensorsData()
   report.humidity = calcHumi;
 
   memset(sensorsData, 0, sizeof sensorsData);
-  Serial.println("Zeros: " + String(numberOfZeros));
   return report;
 }
 
@@ -204,11 +216,12 @@ void sendReport(weatherStationReport report)
     reconnect();
   }
 
-  String msg = "{\"pm1_0\":" + String(report.pm1_0) + "," +
-               "\"pm2_5\":" + String(report.pm2_5) + "," +
-               "\"pm10_0\":" + String(report.pm10_0) + "," +
-               "\"temperature\":" + String(report.temperature) + "," +
-               "\"humidity\":" + String(report.humidity) + "}";
+  String msg = "{\"pm1_0\":" + String(isnan(report.pm1_0) ? "null" : String(report.pm1_0)) + ","
+    + "\"pm2_5\":" + String(isnan(report.pm2_5) ? "null" : String(report.pm2_5)) + ","
+    + "\"pm10_0\":" + String(isnan(report.pm10_0) ? "null" : String(report.pm10_0)) + ","
+    + "\"temperature\":" + String(isnan(report.temperature) ? "null" : String(report.temperature)) + ","
+    + "\"humidity\":" + String(isnan(report.humidity) ? "null" : String(report.humidity))
+    + "}";
 
   char payload[msg.length() + 1];
   memset(payload, 0, sizeof payload);
