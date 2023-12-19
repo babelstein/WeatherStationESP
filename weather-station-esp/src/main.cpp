@@ -18,6 +18,7 @@ const byte DHTPIN = D1;
 const byte RXPIN = D5;
 const byte TXPIN = D6;
 const u_int numberOfReads = 20;
+const char *topicName = "home/temp-dust-sensor";
 
 /* SECRETS */
 const char *ssid = WIFI_SSID;
@@ -216,7 +217,7 @@ void sendReport(weatherStationReport report)
   {
     payload[i] = msg[i];
   }
-  mqttClient.publish("home/temp-dust-sensor", payload);
+  mqttClient.publish(topicName, payload);
 }
 
 void loop()
