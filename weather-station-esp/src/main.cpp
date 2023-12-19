@@ -157,7 +157,7 @@ weatherStationReport calculateSensorsData()
   calcTemp = calcTemp / (float)numberOfReads;
   calcHumi = calcHumi / (float)numberOfReads;
 
-  if (numberOfReads == numberOfZeros)
+  if (numberOfReads == numberOfZeros || calcPm1_0 < 0 || calcPm2_5 < 0 || calcPm10_0 < 0)
   {
     calcPm1_0 = 0;
     calcPm2_5 = 0;
