@@ -14,7 +14,7 @@
 #define SECOND 1000
 #define DHTTYPE DHT22
 #define MSG_BUFFER_SIZE (80)
-const byte DHTPIN = D1;
+const byte DHTPIN = D4;
 const byte RXPIN = D5;
 const byte TXPIN = D6;
 const u_int numberOfReads = 20;
