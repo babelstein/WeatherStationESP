@@ -95,6 +95,7 @@ void setupMqttConnection()
   }
   String id = macHex.substring(macHex.length() - 4);
   topicName = String(topicPrefix) + id;
+  Serial.println("MQTT device topic: " + topicName);
   mqttClient.setServer(mqttbroker, mqttport);
   mqttClient.setCallback(callback);
 }
