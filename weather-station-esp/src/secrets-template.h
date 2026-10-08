@@ -6,3 +6,4 @@
 #define MQTT_PORT 1883
 #define MQTT_USER ""
 #define MQTT_PSWD ""
+#define MQTT_TOPIC ""

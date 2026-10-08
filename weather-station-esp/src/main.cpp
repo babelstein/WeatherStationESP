@@ -18,7 +18,6 @@ const byte DHTPIN = D4;
 const byte RXPIN = D5;
 const byte TXPIN = D6;
 const u_int numberOfReads = 20;
-const char* topicName = "home/temp-dust-sensor";
 
 /* SECRETS */
 const char* ssid = WIFI_SSID;
@@ -27,6 +26,7 @@ const char* mqttbroker = MQTT_ADDRESS;
 const u_int mqttport = MQTT_PORT;
 const char* mqttuser = MQTT_USER;
 const char* mqttpswd = MQTT_PSWD;
+const char* topicPrefix = MQTT_TOPIC;
 
 const u_int pm1_0Index = 0;
 const u_int pm2_5Index = 1;
@@ -42,6 +42,7 @@ PMS::DATA data;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
+String topicName;
 
 float sensorsData[numberOfReads][5];
 
@@ -82,6 +83,10 @@ void callback(char* topic, byte* payload, unsigned int length)
 
 void setupMqttConnection()
 {
+  uint8_t* mac = WiFi.macAddress();
+  char id[5];
+  snprintf(id, sizeof(id), "%02X%02X", mac[4], mac[5]);
+  topicName = String(topicPrefix) + id;
   mqttClient.setServer(mqttbroker, mqttport);
   mqttClient.setCallback(callback);
 }
@@ -230,7 +235,7 @@ void sendReport(weatherStationReport report)
   {
     payload[i] = msg[i];
   }
-  mqttClient.publish(topicName, payload);
+  mqttClient.publish(topicName.c_str(), payload);
 }
 
 void loop()
