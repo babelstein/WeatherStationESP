@@ -1,3 +1,5 @@
+// CREATE secrets.h FILE BASED ON FOLLOWING TEMPLATE:
+
 #define WIFI_SSID ""
 #define WIFI_PASS ""
 #define MQTT_ADDRESS ""

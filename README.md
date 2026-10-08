@@ -1,82 +1,85 @@
 # WeatherStationESP
 
-Arduino/ESP8266 weather sensors built with DHT22 and PMS7003 sensors which passes data over MQTT (Home Assistant integration).
+A DIY weather station project for Arduino and ESP8266, built around the DHT22 temperature/humidity sensor and the PMS7003 particulate matter (PM) laser sensor. Data is sent over MQTT (for Home Assistant integration).
 
-## Wellcome everybody!
+## Welcome, everyone!
 
-Since i was bored with buying (or getting as present) another chinese weather stations which were always problematic to use, mostly because of problems with reading values from distance (LCD display view angles) or higher price for units with PM dust measure, I decided to go with DIY approach and create weather station which will be more usefull in terms of passing information from weather station to other systems.
+I got tired of buying (or receiving as gifts) off-the-shelf Chinese weather stations that were always hard to use — mostly because of problems with reading values from a distance (LCD viewing angles) or the higher price of units that include PM dust measurement. So I decided on a DIY approach and built my own weather station that would be more useful for sharing its data with other systems.
 
-Assumptions that I had:
-- create weather station sensors that can be placed wherever I want and in quantity that fits my needs.
-- power consumption low enough to have battery powered units
-- use data from sensors in other ways than just displaying data on screen
-- have one code for PM sensor unit or dust sensor unit or both at the same time
-- learn more about Arduino and ESP8266 devices in practice when resolving issues
+My goals were:
+
+- create sensor units that can be placed wherever I want, in whatever quantity fits my needs
+- keep power consumption low enough to run the units on battery
+- use the sensor data in ways beyond just displaying it on a screen
+- have one codebase that works with the PM sensor alone, the dust sensor alone, or both at the same time
+- learn more about Arduino and ESP8266 devices in practice by solving real problems
 
 ## Preparation
 
-I've bought follwing hardware:
+Hardware I bought:
 
-- 3x ESP8266 units (LoLin NodeMcu v3 - to be precise)
-- 3x DHT22 temperature/humidity sensor
+- 3x ESP8266 units (LoLin NodeMCU v3, to be precise)
+- 3x DHT22 temperature/humidity sensors
 - 1x PMS7003 PM dust laser sensor
-- 1x PMS7003 JST datapter (very handy as it will turn out later)
-- some jump cables
+- 1x PMS7003 JST data adapter (very handy, as it turns out later)
+- some jumper cables
 - 3x 5V 0.8A power supplies
-- 3x sockets matching to power supply plug
-- 3x plasic cases
+- 3x sockets matching the power supply plugs
+- 3x plastic enclosures
 
-When it comes to arduino I used it's clone Funduino Uno.
+For Arduino I used its clone: a Funduino Uno.
 
 ### Coding part
 
-To have more posibility to play arround with arduino and esp I've decided to go with following approach:
+To give myself more room to experiment with Arduino and ESP, I decided on the following approach:
 
-- separate project for DHT22 for arduino
-- separate project for PMS7003 for arduino
-- separate project for both sensors for ardunio
-- final project for weather station sensor on esp8266 with all communication features
+- separate project for the DHT22 on Arduino
+- separate project for the PMS7003 on Arduino
+- separate project for both sensors on Arduino
+- final project: weather station sensor on ESP8266 with all communication features
 
-Because I like VS Code IDE more than Arduino IDE I was using VS Code with Platformio extension. All of libraries (github urls), baud rates and board names used in mentioned projects are listed in `platformio.ini` file.
+Since I prefer VS Code to the Arduino IDE, I used VS Code with the PlatformIO extension. All libraries (GitHub URLs), baud rates, and board names used in the mentioned projects are listed in the `platformio.ini` file.
 
 ### DHT22 and PMS7003 separately
 
-Both projects are placed in:
+The two projects live in:
+
 - `dht22` folder
 - `pms7003` folder
 
-First of all I wanted to see how DHT22 and PMS7003 sensors works separately with arduino and have some practice with it. With DHT22 it's no brainer. Just connect 3V and GND to decribed slots on board and connect sensor data pin to some input pins. 
-Avoid PWM output pins described with `~` on board! Not quite sure why (mostly because my lack of knowledge).
-If you know why please make PR to this documentation with explanation :)
+First, I wanted to see how the DHT22 and PMS7003 sensors work on their own with Arduino, and get some hands-on practice. The DHT22 is a no-brainer: just connect 3V3 and GND to the labeled pads on the board, and wire the sensor's data pin to any digital input pin.
+Avoid the PWM-capable output pins marked with `~` on the board! I'm not entirely sure why (largely due to my own lack of knowledge).
+If you know why, feel free to open a PR to this documentation with an explanation! :)
 
-### PMS7003 story 
-With PMS7003 it's a different story. First of all I had problem with connecting sensor to board with included to sensor SMD 10 pin female plug 1,27mm raster. It's very tiny and precise stuff to play with. After some work with soldering calbes to plug it turned out that plug should be soldered to board first to make it more rigid. Since borad raster is also smaller than usual 2,54mm raster so it was hard to get as well in my local electronics store.
+### PMS7003 story
 
-After another tries with this plug i decided to buy JST adapter for this sensor and it was correct decision since plug had to be well placed in socked since even small moves could break connection between microcontroller board and sensor.
+The PMS7003 is a different story. First, I had trouble connecting the sensor to the board using its included 10-pin SMD female header with a 1.27 mm pitch. It's very small and fiddly to work with. After some experience soldering cables to the plug, I found that the plug needs to be soldered to the board first to make the connection more rigid. The board's pitch is also smaller than the standard 2.54 mm, which made it hard to source locally at my electronics store either.
 
-Pinout for PMS7003 was pins 8 and 7 for RX and TX serial communication with usage of SoftwareSerial library. This sensor can run with 5V and 3V perfectly well. I wasn't using any capacitor for voltage line.
+After a few more attempts with this plug, I bought the JST adapter for the sensor — a decision that paid off, because the plug has to sit snugly in its socket: even tiny movements can break the connection between the microcontroller board and the sensor.
+
+For wiring, I used pins 8 and 7 for the RX/TX serial connection, handled by the SoftwareSerial library. The sensor runs perfectly on both 5 V and 3 V. I didn't use any capacitors on the power line.
 
 ### Make it work together
 
 Project folder: `weather-station-uno`
 
-Next step was to put both of sensors together in arduino. Basicaly I've used 2nd pin for DHT22 and pins 8 and 7 for RX, TX serial communication as before. This time I tried to use pasive mode for PMS7003 which can save some energy since sensor will consume bigger ammount of energy only between `wakeUp()` and `sleep()` function calls.'
+The next step was to combine both sensors on the Arduino. Basically, I used digital pin 2 for the DHT22 and pins 8 and 7 for the RX/TX serial connection, as before. This time I used passive mode for the PMS7003 to save power — in that mode the sensor draws more current only between `wakeUp()` and `sleep()`.
 
-Also I've learned that PMS sensor works better when reads are not interupted with `delay()` function. So delays are only used when sensor is asleep and after waking it up for initial fan spin.
+I also learned that the PMS sensor works best when its readings aren't interrupted by `delay()` calls, so delays are only used while the sensor is sleeping and right after wake-up for the initial fan spin-up.
 
-After wake up delay I'm taking 10 reads of all sensors and calculating average result.
+After the wake-up delay, I take 10 readings from all sensors and calculate the average.
 
 ### WiFi connection and MQTT with ESP8266
 
 Project folder: `weather-station-esp`
 
-This time I wanted to improve arduino code and migrate it to ESP8266.
+At this point I wanted to clean up the Arduino code and port it over to the ESP8266.
 
 #### Problems with uploading code
 
-First problem I had was the issue with uploading code to one of my ESPs. On one everything worked just fine with board name set to `nodemcu` but on another there were problems.
+My first problem was uploading code to one of my ESPs. On one board everything worked fine with the board type set to `nodemcu`, but on another I ran into issues.
 
-I've seen some strange output on serial monitor and started to play with baud rate. Once I've set it to `74880` i've received some "human friendly" error like:
+I saw some strange output in the serial monitor, so I started experimenting with the baud rate. At one point I set it to `74880` and got a more "human-readable" error message:
 
 ```
 load 0x4010f000, len 1392, room 16 
@@ -87,9 +90,9 @@ v3d128e5c
 ~ld
 ```
 
-Since this error message did not told me much (again, lack of knowledge) I've decided to play arround in Arduino IDE and after I've changed board type it started to work! Board name I am using in platformio now is `nodemcuv2`.
+The error message didn't really tell me much (again, a lack of knowledge on my part), so I went back to the Arduino IDE — and once I changed the board type there, it started working! The board type I now use in PlatformIO is `nodemcuv2`.
 
-Just for a record. Boards looked exactly the same way. I could not see any visible differences between them.
+Just for the record: the boards looked exactly identical — I couldn't spot any visible difference between them.
 
 #### Changes in code in comparison to arduino version
 

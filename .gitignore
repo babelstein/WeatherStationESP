@@ -1,0 +1,6 @@
+
+weather-station-esp-sleep/.pio/
+weather-station-esp-sleep/.vscode/
+.vscode/
+
+weather-station-esp/src/secrets.h
