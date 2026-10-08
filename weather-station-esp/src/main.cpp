@@ -83,9 +83,17 @@ void callback(char* topic, byte* payload, unsigned int length)
 
 void setupMqttConnection()
 {
-  uint8_t* mac = WiFi.macAddress();
-  char id[5];
-  snprintf(id, sizeof(id), "%02X%02X", mac[4], mac[5]);
+  String mac = WiFi.macAddress();
+  String macHex;
+  for (u_int i = 0; i < mac.length(); i++)
+  {
+    char c = mac.charAt(i);
+    if (c != ':')
+    {
+      macHex += c;
+    }
+  }
+  String id = macHex.substring(macHex.length() - 4);
   topicName = String(topicPrefix) + id;
   mqttClient.setServer(mqttbroker, mqttport);
   mqttClient.setCallback(callback);
