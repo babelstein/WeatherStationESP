@@ -102,6 +102,31 @@ TODO
 
 TODO
 
+## Building
+
+The `weather-station-esp` project builds for **both ESP8266 and ESP32** from the same source tree. The few platform-specific parts (WiFi header, PMS serial port, pin defines) are selected at compile time with `ARDUINO_ARCH_ESP8266` / `ARDUINO_ARCH_ESP32` preprocessor guards, so no separate source files are needed.
+
+Two PlatformIO environments are defined in `weather-station-esp/platformio.ini`:
+
+| Environment | Board | Build command |
+|-------------|-------|---------------|
+| `[env:nodemcu]` | ESP8266 (nodemcuv2) | `pio run -e nodemcu` |
+| `[env:esp32]` | ESP32 (esp32dev) | `pio run -e esp32` |
+
+To upload, append `-t upload` (e.g. `pio run -e esp32 -t upload`). To watch serial output, use `pio device monitor -p <COM port>`.
+
+> **Note:** `src/secrets.h` is gitignored. Create it from `src/secrets-template.h` with your real WiFi/MQTT credentials before building.
+
+### Pin mapping
+
+| Sensor | ESP8266 (nodemcu) | ESP32 (esp32dev) |
+|--------|-------------------|------------------|
+| DHT22 data | D4 (GPIO4) | GPIO4 (D4) |
+| PMS RX (board→sensor) | D5 (GPIO5) | GPIO16 (D16) |
+| PMS TX (sensor→board) | D6 (GPIO6) | GPIO17 (D17) |
+
+On ESP8266 the PMS sensor is driven over `SoftwareSerial` (D5/D6). On ESP32 it uses the hardware `Serial2` UART (GPIO17 TX / GPIO16 RX), since the common 30-pin DevKit V1 does not break out the `Serial1` pins (GPIO9/10).
+
 ## Problems after assembly
 
 TODO

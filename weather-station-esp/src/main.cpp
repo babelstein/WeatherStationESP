@@ -2,21 +2,30 @@
 #include <weatherStationReport.h>
 
 #include "PMS.h"
-#include <SoftwareSerial.h>
 #include <Adafruit_Sensor.h>
 #include <SPI.h>
 #include <DHT.h>
-#include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
+
+#if defined(ARDUINO_ARCH_ESP8266)
+#include <SoftwareSerial.h>
+#include <ESP8266WiFi.h>
+#elif defined(ARDUINO_ARCH_ESP32)
+#include <WiFi.h>
+#endif
 
 /* CONFIGURATION */
 #define SECOND 1000
 #define DHTTYPE DHT22
 #define MSG_BUFFER_SIZE (80)
+#if defined(ARDUINO_ARCH_ESP8266)
 const byte DHTPIN = D4;
 const byte RXPIN = D5;
 const byte TXPIN = D6;
+#elif defined(ARDUINO_ARCH_ESP32)
+const byte DHTPIN = 4;  // GPIO4
+#endif
 const u_int numberOfReads = 20;
 
 /* SECRETS */
@@ -34,7 +43,12 @@ const u_int pm10_0Index = 2;
 const u_int tempIndex = 3;
 const u_int humidityIndex = 4;
 
+#if defined(ARDUINO_ARCH_ESP8266)
 SoftwareSerial mySerial(TXPIN, RXPIN);
+#elif defined(ARDUINO_ARCH_ESP32)
+#define mySerial Serial2
+#endif
+
 DHT dht(DHTPIN, DHTTYPE);
 
 PMS pms(mySerial);
